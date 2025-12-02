@@ -287,7 +287,6 @@ class AssignmentPeriod(Period):
         dist_cost = fares.start_fare + fares.dist_fare*dist
         cost[cost>=maxfare] = dist_cost[cost>=maxfare]
         # For entries in cost matrix inside HSL-region, calculate the cost using custom distance-based fare
-        HSL_od_pairs = []
         beeline_dist_mtx = self.beeline_dist()
         cost_func = simple_cost
         for orig in network.centroids():
@@ -297,7 +296,6 @@ class AssignmentPeriod(Period):
                     j = mapping[dest.number]
                     beeline_dist = beeline_dist_mtx[i,j]
                     cost[i,j] = ticket_cost(beeline_dist,cost_func)
-                    HSL_od_pairs.append((i,j))
         # Reset boarding penalties
         self._calc_boarding_penalties()
         return cost
