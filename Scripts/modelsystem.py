@@ -14,6 +14,7 @@ from dataclasses import asdict
 
 import utils.log as log
 from utils.zone_interval import ArrayAggregator
+from utils.ticket_price import transit_zones_HSL
 import assignment.departure_time as dt
 from datahandling.resultdata import ResultsData
 from datahandling.zonedata import ZoneData, BaseZoneData
@@ -427,6 +428,7 @@ class ModelSystem:
             self.ass_model.aggregate_results(self.resultdata)
             self._save_pnr_facility_info()
             self._calculate_noise_areas()
+            self._get_HSL_internal_od_pairs()
             self._calculate_accessibility_and_savu_zones()
             self.resultdata.print_line("\nMode shares", "result_summary")
             for mode in mode_shares:
@@ -474,7 +476,18 @@ class ModelSystem:
         for col in pnr_results.columns:
             self.resultdata.print_data(pnr_results[col], "pnr_facilities.txt", col)
 
-
+    def _get_HSL_internal_od_pairs(self):
+        origins = []
+        destinations = []
+        network = self.ass_model.mod_scenario.get_network()
+        for orig in network.centroids():
+            for dest in network.centroids():
+                if orig.label in transit_zones_HSL and dest.label in transit_zones_HSL:
+                    origins.append(orig.number)
+                    destinations.append(dest.number)
+        self.resultdata.print_data(origins, "od_pairs_HSL.txt", "origin")
+        self.resultdata.print_data(destinations, "od_pairs_HSL.txt", "destination")
+    
     def _calculate_noise_areas(self):
         noise_areas = self.ass_model.calc_noise()
         self.resultdata.print_data(noise_areas, "noise_areas.txt", "area")
