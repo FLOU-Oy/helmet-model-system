@@ -11,6 +11,7 @@ from assignment.datatypes.car_specification import CarSpecification
 from assignment.datatypes.transit import TransitSpecification
 from assignment.datatypes.path_analysis import PathAnalysis
 from assignment.abstract_assignment import Period
+from utils.ticket_price import ticket_cost, simple_cost, transit_zones_HSL
 if TYPE_CHECKING:
     from assignment.emme_bindings.emme_project import EmmeProject
     from assignment.datatypes.transit_fare import TransitFareZoneSpecification
@@ -285,6 +286,18 @@ class AssignmentPeriod(Period):
         dist = self._get_matrix(tc, "dist")
         dist_cost = fares.start_fare + fares.dist_fare*dist
         cost[cost>=maxfare] = dist_cost[cost>=maxfare]
+        # For entries in cost matrix inside HSL-region, calculate the cost using custom distance-based fare
+        HSL_od_pairs = []
+        beeline_dist_mtx = self.beeline_dist()
+        cost_func = simple_cost
+        for orig in network.centroids():
+            for dest in network.centroids():
+                if orig.label in transit_zones_HSL and dest.label in transit_zones_HSL:
+                    i = mapping[orig.number]
+                    j = mapping[dest.number]
+                    beeline_dist = beeline_dist_mtx[i,j]
+                    cost[i,j] = ticket_cost(beeline_dist,cost_func)
+                    HSL_od_pairs.append((i,j))
         # Reset boarding penalties
         self._calc_boarding_penalties()
         return cost
@@ -305,6 +318,15 @@ class AssignmentPeriod(Period):
                     else:
                         segment.i_node[nodeattr] += segment[segres[tc][res]]
         self.emme_scenario.publish_network(network)
+    
+    def beeline_dist(self):
+        log.info("Get beeline distances from network centroids")
+        network = self.emme_scenario.get_network()
+        xy = 0.001 * numpy.array(
+            [[node.x, node.y] for node in network.centroids()],
+            dtype=numpy.float32)
+        return numpy.sqrt(
+            sum((xy[:, axis] - xy[:, axis, None])**2 for axis in (0, 1)))
 
     def _set_car_and_transit_vdfs(self):
         log.info("Sets car and transit functions for scenario {}".format(
