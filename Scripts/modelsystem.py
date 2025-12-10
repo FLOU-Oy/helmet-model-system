@@ -485,8 +485,8 @@ class ModelSystem:
                 if orig.label in transit_zones_HSL and dest.label in transit_zones_HSL:
                     origins.append(orig.number)
                     destinations.append(dest.number)
-        self.resultdata.print_data(origins, "od_pairs_HSL.txt", "origin")
-        self.resultdata.print_data(destinations, "od_pairs_HSL.txt", "destination")
+        self.resultdata.print_data(pandas.Series(origins), "od_pairs_HSL.txt", "origin")
+        self.resultdata.print_data(pandas.Series(destinations), "od_pairs_HSL.txt", "destination")
     
     def _calculate_noise_areas(self):
         noise_areas = self.ass_model.calc_noise()
