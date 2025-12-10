@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, List, Union, TYPE_CHECKING
 import pandas as pd
 import numpy as np
+import openmatrix as omx
 
 from events.model_system_event_listener import ModelSystemEventListener
 
@@ -36,16 +37,24 @@ class DemandAnalysis(ModelSystemEventListener):
                                     name: str) -> None:
         # Get result path when model system is initialized
         self.result_path = Path(results_path) / name / 'mode_analysis_results.csv'
+        self.results_path_matrices = Path(results_path) / name / 'Matrices'
+        self.model_system = model_system
+        self.assignment_model = assignment_model
     
     def on_iteration_started(self, iteration: Union[int, str], previous_impedance: Dict[str, Dict[str, np.ndarray]]):
         # Add new row for each iteration
         self.mode_demands.append({'iteration': iteration})
     
-    def on_purpose_demand_calculated(self, purpose: 'TourPurpose', demand: 'Demand'):
+    def on_purpose_demand_calculated(self, is_last_iter: bool, purpose: 'TourPurpose', demand: Dict[str, 'Demand']):
         # Sum mode demand for each purpose after it has been calculated
         current_results = self.mode_demands[-1]
         for m, d in demand.items():
             current_results[m] = d.matrix.sum() + current_results.get(m, 0)
+        # Output vrk transit demand matrices for given purpose after last iteration
+        if is_last_iter:
+            zone_numbers = self.assignment_model.zone_numbers
+            with self.model_system.resultmatrices.open("demand_vrk", purpose.name, zone_numbers, 'a') as mtx:
+                mtx["transit"] = demand["transit"].matrix
     
     def on_iteration_complete(self, iteration: Union[str, int], impedance: Dict[str, Dict[str, np.ndarray]], gap: Dict[str, float]):
         # Print resuts after last iteration

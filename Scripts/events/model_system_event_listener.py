@@ -127,7 +127,7 @@ class ModelSystemEventListener(ABC):
         """
         pass
     
-    def on_purpose_demand_calculated(self, purpose: 'TourPurpose', demand: Dict[str, 'Demand']) -> None:
+    def on_purpose_demand_calculated(self, is_last_iteration: bool, purpose: 'TourPurpose', demand: Dict[str, 'Demand']) -> None:
         """
         Event handler that is called when purpose demand has been calculated.
 

@@ -189,7 +189,7 @@ class ModelSystem:
                                 break
                         log.debug("Park and ride demand calculation completed.")
 
-                self.event_handler.on_purpose_demand_calculated(purpose, demand)
+                self.event_handler.on_purpose_demand_calculated(is_last_iteration, purpose, demand)
                 if purpose.dest != "source":
                     for mode in demand:
                         self.dtm.add_demand(demand[mode])
