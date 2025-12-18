@@ -14,7 +14,7 @@ from dataclasses import asdict
 
 import utils.log as log
 from utils.zone_interval import ArrayAggregator
-from utils.ticket_price import transit_zones_HSL
+from utils.ticket_price import transit_zones_HSL, ticket_types_HSL
 import assignment.departure_time as dt
 from datahandling.resultdata import ResultsData
 from datahandling.zonedata import ZoneData, BaseZoneData
@@ -428,7 +428,7 @@ class ModelSystem:
             self.ass_model.aggregate_results(self.resultdata)
             self._save_pnr_facility_info()
             self._calculate_noise_areas()
-            self._get_HSL_internal_od_pairs()
+            self._get_HSL_internal_od_pairs(impedance["aht"])
             self._calculate_accessibility_and_savu_zones()
             self.resultdata.print_line("\nMode shares", "result_summary")
             for mode in mode_shares:
@@ -476,17 +476,53 @@ class ModelSystem:
         for col in pnr_results.columns:
             self.resultdata.print_data(pnr_results[col], "pnr_facilities.txt", col)
 
-    def _get_HSL_internal_od_pairs(self):
+    def _get_HSL_internal_od_pairs(self, impedance):
+        # Init lists for output values
         origins = []
         destinations = []
+        trip_costs = []
+        beeline_dists = []
+        demands = []
+        ticket_types = []
+
+        # Create matrices
+        cost_matrix = impedance["cost"]["transit_work"]
+        beeline_matrix = self.beeline_dist()
+        mapping = self.ass_model.mapping
+        zone_numbers = self.ass_model.zone_numbers
+
+        # Create total transit vrk demand matrix
+        transit_demand_total = None
+        for pur in self.dm.purpose_dict:
+            purpose = self.dm.purpose_dict[pur]
+            with self.resultmatrices.open("demand_vrk", purpose.name, zone_numbers, 'r') as mtx:
+                mat = mtx["transit"][:]
+                if transit_demand_total is None:
+                    transit_demand_total = mat.copy()
+                else:
+                    transit_demand_total += mat
+
+        # Collect data from HSL-area centroids
         network = self.ass_model.mod_scenario.get_network()
         for orig in network.centroids():
             for dest in network.centroids():
                 if orig.label in transit_zones_HSL and dest.label in transit_zones_HSL:
-                    origins.append(orig.number)
-                    destinations.append(dest.number)
+                    i = orig.number
+                    j = dest.number
+                    origins.append(i)
+                    destinations.append(j)
+                    trip_costs.append(cost_matrix[mapping[i], mapping[j]])
+                    beeline_dists.append(beeline_matrix[mapping[i], mapping[j]])
+                    demands.append(transit_demand_total[mapping[i], mapping[j]])
+                    ticket_types.append(ticket_types_HSL[(orig.label,dest.label)])
+
+        # Print to file
         self.resultdata.print_data(pandas.Series(origins), "od_pairs_HSL.txt", "origin")
         self.resultdata.print_data(pandas.Series(destinations), "od_pairs_HSL.txt", "destination")
+        self.resultdata.print_data(pandas.Series(trip_costs), "od_pairs_HSL.txt", "cost")
+        self.resultdata.print_data(pandas.Series(beeline_dists), "od_pairs_HSL.txt", "beeline_dist")
+        self.resultdata.print_data(pandas.Series(demands), "od_pairs_HSL.txt", "demand")
+        self.resultdata.print_data(pandas.Series(ticket_types), "od_pairs_HSL.txt", "ticket_type")
     
     def _calculate_noise_areas(self):
         noise_areas = self.ass_model.calc_noise()
@@ -496,6 +532,15 @@ class ModelSystem:
         conversion = pandas.Series(zone_param.pop_share_per_noise_area)
         noise_pop = conversion * noise_areas * pop
         self.resultdata.print_data(noise_pop, "noise_areas.txt", "population")
+    
+    def beeline_dist(self):
+        log.info("Get beeline distances from network centroids")
+        network = self.ass_model.mod_scenario.get_network()
+        xy = 0.001 * numpy.array(
+            [[node.x, node.y] for node in network.centroids()],
+            dtype=numpy.float32)
+        return numpy.sqrt(
+            sum((xy[:, axis] - xy[:, axis, None])**2 for axis in (0, 1)))
 
     def _calculate_accessibility_and_savu_zones(self):
         logsum = 0

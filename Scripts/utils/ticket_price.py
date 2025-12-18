@@ -2,6 +2,25 @@
 
 transit_zones_HSL = {'A','B','C','D'}
 
+ticket_types_HSL = {
+    ('A', 'A'): "AB",
+    ('A', 'B'): "AB",
+    ('A', 'C'): "ABC",
+    ('A', 'D'): "ABCD",
+    ('B', 'A'): "AB",
+    ('B', 'B'): "AB",
+    ('B', 'C'): "BC",
+    ('B', 'D'): "BCD",
+    ('C', 'A'): "ABC",
+    ('C', 'B'): "BC",
+    ('C', 'C'): "BC",
+    ('C', 'D'): "CD",
+    ('D', 'A'): "ABCD",
+    ('D', 'B'): "BCD",
+    ('D', 'C'): "CD",
+    ('D', 'D'): "CD",
+}
+
 def ticket_cost(distance, cost_fn):
     """
     Calculate ticket cost based on a beeline distance and a cost function.
