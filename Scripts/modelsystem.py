@@ -3,6 +3,7 @@ import threading
 import multiprocessing
 import os
 from typing import Any, Dict, List, Union, cast
+import openmatrix as omx # type: ignore
 import numpy
 import pandas
 import random
@@ -495,7 +496,8 @@ class ModelSystem:
         transit_demand_total = None
         for pur in self.dm.purpose_dict:
             purpose = self.dm.purpose_dict[pur]
-            with self.resultmatrices.open("demand_vrk", purpose.name, zone_numbers, 'r') as mtx:
+            file_name = os.path.join(self.resultmatrices.path, "demand_vrk"+'_'+purpose.name+".omx")
+            with omx.open_file(file_name, 'r') as mtx:
                 mat = mtx["transit"][:]
                 if transit_demand_total is None:
                     transit_demand_total = mat.copy()
