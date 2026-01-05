@@ -493,16 +493,18 @@ class ModelSystem:
         zone_numbers = self.ass_model.zone_numbers
 
         # Create total transit vrk demand matrix
-        transit_demand_total = None
+        transit_demand_total = numpy.zeros_like(self.dtm.demand["aht"]["transit_work"])
         for pur in self.dm.purpose_dict:
             purpose = self.dm.purpose_dict[pur]
             file_name = os.path.join(self.resultmatrices.path, "demand_vrk"+'_'+purpose.name+".omx")
-            with omx.open_file(file_name, 'r') as mtx:
-                mat = mtx["transit"][:]
-                if transit_demand_total is None:
-                    transit_demand_total = mat.copy()
-                else:
-                    transit_demand_total += mat
+            try:
+                with omx.open_file(file_name, 'r') as mtx:
+                    mat = mtx["transit"][:]
+                    r, c = mat.shape
+                    transit_demand_total[:r, :c] += mat
+            except FileNotFoundError:
+                log.info(f"No demand matrix found for purpose: {purpose.name}")
+                pass
 
         # Collect data from HSL-area centroids
         network = self.ass_model.mod_scenario.get_network()
@@ -521,9 +523,9 @@ class ModelSystem:
         # Print to file
         self.resultdata.print_data(pandas.Series(origins), "od_pairs_HSL.txt", "origin")
         self.resultdata.print_data(pandas.Series(destinations), "od_pairs_HSL.txt", "destination")
-        self.resultdata.print_data(pandas.Series(trip_costs), "od_pairs_HSL.txt", "cost")
+        self.resultdata.print_data(pandas.Series(trip_costs), "od_pairs_HSL.txt", "transit_cost")
         self.resultdata.print_data(pandas.Series(beeline_dists), "od_pairs_HSL.txt", "beeline_dist")
-        self.resultdata.print_data(pandas.Series(demands), "od_pairs_HSL.txt", "demand")
+        self.resultdata.print_data(pandas.Series(demands), "od_pairs_HSL.txt", "transit_demand")
         self.resultdata.print_data(pandas.Series(ticket_types), "od_pairs_HSL.txt", "ticket_type")
     
     def _calculate_noise_areas(self):
