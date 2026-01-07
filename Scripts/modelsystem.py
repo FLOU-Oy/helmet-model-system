@@ -494,17 +494,19 @@ class ModelSystem:
 
         # Create total transit vrk demand matrix
         transit_demand_total = numpy.zeros_like(self.dtm.demand["aht"]["transit_work"])
+        HS15_purposes = ["hw", "hc", "hu", "hs", "ho", "hh", "wo", "oo"]
         for pur in self.dm.purpose_dict:
             purpose = self.dm.purpose_dict[pur]
-            file_name = os.path.join(self.resultmatrices.path, "demand_vrk"+'_'+purpose.name+".omx")
-            try:
-                with omx.open_file(file_name, 'r') as mtx:
-                    mat = mtx["transit"][:]
-                    r, c = mat.shape
-                    transit_demand_total[:r, :c] += mat
-            except FileNotFoundError:
-                log.info(f"No demand matrix found for purpose: {purpose.name}")
-                pass
+            if purpose.name in HS15_purposes:
+                file_name = os.path.join(self.resultmatrices.path, "demand_vrk"+'_'+purpose.name+".omx")
+                try:
+                    with omx.open_file(file_name, 'r') as mtx:
+                        mat = mtx["transit"][:]
+                        r, c = mat.shape
+                        transit_demand_total[:r, :c] += mat
+                except FileNotFoundError:
+                    log.info(f"No demand matrix found for purpose: {purpose.name}")
+                    pass
 
         # Collect data from HSL-area centroids
         network = self.ass_model.mod_scenario.get_network()
