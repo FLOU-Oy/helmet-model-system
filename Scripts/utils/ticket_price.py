@@ -45,14 +45,18 @@ def ticket_cost(distance, cost_fn):
     return cost_fn(distance)
 
 
-def simple_cost(distance):
-    base_fee = 5
-    per_km = 0.4
+def linear_cost(distance):
+
+    # Set parameters
+    base_fee = 1
+    per_km_fee = 0.32
     ceiling_fee = 10
 
-    trip_cost = base_fee + distance * per_km
+    # Calculate single trip cost
+    trip_cost = base_fee + distance * per_km_fee
 
-    if trip_cost > ceiling_fee:
-        trip_cost = ceiling_fee
+    # Convert trip costs to monthly costs
+    trip_cost = trip_cost * 44
+    ceiling_fee = ceiling_fee * 44
 
-    return trip_cost
+    return min(trip_cost,ceiling_fee)

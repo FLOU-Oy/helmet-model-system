@@ -11,7 +11,7 @@ from assignment.datatypes.car_specification import CarSpecification
 from assignment.datatypes.transit import TransitSpecification
 from assignment.datatypes.path_analysis import PathAnalysis
 from assignment.abstract_assignment import Period
-from utils.ticket_price import ticket_cost, simple_cost, transit_zones_HSL
+from utils.ticket_price import ticket_cost, linear_cost, transit_zones_HSL
 if TYPE_CHECKING:
     from assignment.emme_bindings.emme_project import EmmeProject
     from assignment.datatypes.transit_fare import TransitFareZoneSpecification
@@ -288,7 +288,7 @@ class AssignmentPeriod(Period):
         cost[cost>=maxfare] = dist_cost[cost>=maxfare]
         # For entries in cost matrix inside HSL-region, calculate the cost using custom distance-based fare
         beeline_dist_mtx = self.beeline_dist()
-        cost_func = simple_cost
+        cost_func = linear_cost
         for orig in network.centroids():
             for dest in network.centroids():
                 if orig.label in transit_zones_HSL and dest.label in transit_zones_HSL:
