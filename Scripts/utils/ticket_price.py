@@ -56,7 +56,7 @@ def linear_cost(distance):
     trip_cost = base_fee + distance * per_km_fee
 
     # Convert trip costs to monthly costs
-    trip_cost = trip_cost * 44
-    ceiling_fee = ceiling_fee * 44
+    trip_cost = trip_cost * 23
+    ceiling_fee = ceiling_fee * 23
 
     return min(trip_cost,ceiling_fee)
